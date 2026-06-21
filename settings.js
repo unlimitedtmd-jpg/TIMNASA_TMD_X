@@ -25,7 +25,7 @@ description: process.env.BOT_DESCRIPTION || "This is a bot for managing group co
   
 version: process.env.BOT_VERSION || "2.0.0",
   
-updateZipUrl: process.env.UPDATE_ZIP_URL || "https://github.com/TimnasaTz/TIMNASA_TMD-X/archive/refs/heads/main.zip",
+updateZipUrl: process.env.UPDATE_ZIP_URL || "https://github.com/unlimitedtmd-jpg/TIMNASA_TMD_X/archive/refs/heads/main.zip",
 };
 
 module.exports = settings;
