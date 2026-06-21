@@ -2,12 +2,9 @@ const config = require('../config');
 const moment = require('moment-timezone');
 const { cmd, commands } = require('../command');
 
-const MENU_IMAGE_URL = "https://files.catbox.moe/aapw1p.png";
-
 // =====================
 // Simple Greeting Logic
 // =====================
-
 const getGreeting = () => {
     const hour = moment().tz('Africa/Nairobi').hour();
 
@@ -20,7 +17,6 @@ const getGreeting = () => {
 // =====================
 // MENU COMMAND
 // =====================
-
 cmd({
     pattern: "menu2",
     alias: ["help2", "allmenu2"],
@@ -32,20 +28,29 @@ cmd({
 async (conn, mek, m, { from, sender, pushName, reply }) => {
 
     try {
-        // Define combined fakevCard for quoting
+        // 1. Kutengeneza Quoted Message ya vCard iliyo salama na isiyofeli
         const fakevCard = {
             key: {
                 fromMe: false,
-                participant: "0@s.whatsapp.net",
-                remoteJid: "status@broadcast"
+                participant: sender, // Inatumia sender halisi kuzuia error
+                remoteJid: from
             },
             message: {
                 contactMessage: {
-                    displayName: "HansTz Ke",
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:HansTz\nORG:HansTz;\nTEL;type=CELL;type=VOICE;waid=255753668403:+255753668403\nEND:VCARD`
+                    displayName: pushName || "User",
+                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${pushName || "User"}\nEND:VCARD`
                 }
             }
         };
+
+        // 2. Kuchukua Picha ya Wasifu (User Profile Picture)
+        let menuImage;
+        try {
+            menuImage = await conn.profilePictureUrl(sender, 'image');
+        } catch (e) {
+            // Kama mtumiaji hana picha, itatumia hii ya Catbox uliyoweka mwanzo
+            menuImage = "https://files.catbox.moe/aapw1p.png"; 
+        }
 
         const now = moment().tz("Africa/Nairobi");
         const date = now.format("DD/MM/YYYY");
@@ -62,40 +67,36 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
         const totalCommands = activeCommands.length; 
 
         activeCommands.forEach(cmd => {
-                const category = cmd.category.toUpperCase();
-                const name = cmd.pattern.split("|")[0].trim();
-                if (!commandsByCategory[category])
-                    commandsByCategory[category] = [];
-                commandsByCategory[category].push(name);
-            });
+            const category = cmd.category.toUpperCase();
+            const name = cmd.pattern.split("|")[0].trim();
+            if (!commandsByCategory[category])
+                commandsByCategory[category] = [];
+            commandsByCategory[category].push(name);
+        });
 
         const sortedCategories = Object.keys(commandsByCategory).sort();
 
         // =====================
-        // HEADER
+        // HEADER (Cyberpunk Style)
         // =====================
-        let menu = `
-┌─❖
-│VORTEX-XMD
-└┬❖
-  │${greeting}*
-  └────────┈❖
-▬▬▬▬▬▬▬▬▬▬
-> 🕵️ᴜsᴇʀ ɴᴀᴍᴇ: ${userName}
-> 📅ᴅᴀᴛᴇ: ${date}
-> ⏰ᴛɪᴍᴇ: ${time}
-> ⭐ᴛᴏᴛᴀʟ ᴄᴍᴅꜱ: ${totalCommands}
-▬▬▬▬▬▬▬▬▬▬
-`;
+        let menu = `⚡ *TIMNASA MULTIPLE BOT MENU* ⚡\n\n` +
+                   ` ${greeting} *${userName}*\n` +
+                   ` 🗓️ *Date:* ${date}\n` +
+                   ` ⏰ *Time:* ${time}\n` +
+                   ` 📊 *Total Commands:* ${totalCommands}\n\n` +
+                   ` _"Breaching limitations, automating the future."_\n` +
+                   `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n`;
 
         // =====================
         // COMMAND LIST
         // =====================
         for (const category of sortedCategories) {
-            menu += `\n*╭─❖ ${category} MENU ❖*\n`;
+            menu += `\n*╭─❖ ⚡ ${category} ⚡ ❖*\n`;
             const sortedCommands = commandsByCategory[category].sort();
             for (const cmdName of sortedCommands) {
-                menu += `*│❍⁠⁠ ${config.PREFIX}${cmdName}*\n`;
+                // Inasoma prefix moja kwa moja kutoka kwenye config yako
+                const prefix = config.PREFIX || '.'; 
+                menu += `*│❍ ${prefix}${cmdName}*\n`;
             }
             menu += `*╰──────────────❖*\n`;
         }
@@ -103,43 +104,44 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
         // =====================
         // FOOTER
         // =====================
-        menu += `
-┌─❖
-│VORTEX-XMD BOT
-└──────────────❖
-`;
+        menu += `\n` +
+                `┌──────────────❖\n` +
+                `│ TIMNASA TIMOTH © 2026\n` +
+                `└──────────────❖\n`;
 
+        // =====================
+        // CONTEXT INFO (NEWSLETTER)
+        // =====================
         const newsletterContextInfo = {
             mentionedJid: [sender],
             forwardingScore: 999,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
                 newsletterJid: config.NEWSLETTER_JID || '120363421513037430@newsletter',
-                newsletterName: config.OWNER_NAME || 'HansTz',
+                newsletterName: config.OWNER_NAME || 'Timnasa Timoth',
                 serverMessageId: 1
             }
         };
 
         // =====================
-        // SEND MENU WITH FAKEV-CARD QUOTED
+        // SEND MENU
         // =====================
         await conn.sendMessage(from, {
-            image: { url: MENU_IMAGE_URL },
+            image: { url: menuImage },
             caption: menu,
             contextInfo: {
                 ...newsletterContextInfo,
                 externalAdReply: {
-                    title: "VORTEX-XMD",
-                    body: userName,
+                    title: "TIMNASA_TMD_X",
+                    body: `Hello ${userName}, Active & Stable`,
                     mediaType: 1,
-                    renderLargerThumbnail: false 
+                    renderLargerThumbnail: true // Imewekwa TRUE ili picha ionekane kubwa na safi
                 }
             }
-        }, { quoted: fakevCard }); // <--- Using the fakevCard here
+        }, { quoted: fakevCard });
 
     } catch (e) {
-        console.log(e);
+        console.error("Error in menu2 command:", e);
         reply("❌ Error loading menu.");
     }
-
 });
