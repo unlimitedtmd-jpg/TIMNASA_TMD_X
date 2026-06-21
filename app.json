@@ -1,0 +1,71 @@
+{
+  "name": "TIMNASA_TMD-X WhatsApp Bot",
+  "description": "Advanced WhatsApp Bot with 200+ features for group management and automation",
+  "repository": "https://github.com/timnasax/TIMNASA_TMD1",
+  "logo": "",
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "whatsapp-bot",
+    "baileys",
+    "nodejs",
+    "javascript",
+    "automation",
+    "group-management",
+    "vortex",
+    "xmd"
+  ],
+  "website": "https://github.com/timnasax/TIMNASA_TMD1",
+  "success_url": "/",
+  "env": {
+    "PREFIX": {
+      "description": "SET YOUR PREFIX .,;",
+      "value": ".",
+      "required": false
+    },
+    "SESSION_ID": {
+      "description": "Mega.nz session file ID (Format: Timnasa&YOUR_FILE_ID)",
+      "value": "",
+      "required": false
+    },
+    "BOT_OWNER": {
+      "description": "Bot owner name",
+      "value": "Hans_Tz",
+      "required": true
+    },
+    "OWNER_NUMBER": {
+      "description": "Owner WhatsApp number (without +)",
+      "value": "255784766591",
+      "required": true
+    },
+    "COMMAND_MODE": {
+      "description": "Command mode (public or private)",
+      "value": "private",
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "https://github.com/jontewks/puppeteer-heroku-buildpack"
+    }
+  ],
+  "addons": [
+    {
+      "plan": "heroku-redis:hobby-dev",
+      "as": "REDIS"
+    }
+  ],
+  "stack": "heroku-22",
+  "scripts": {
+    "postdeploy": "npm install"
+  }
+}
