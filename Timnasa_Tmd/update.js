@@ -40,7 +40,6 @@ async function updateViaGit() {
 function downloadFile(url, dest, visited = new Set()) {
     return new Promise((resolve, reject) => {
         try {
-            // Avoid infinite redirect loops
             if (visited.has(url) || visited.size > 5) {
                 return reject(new Error('Too many redirects'));
             }
@@ -54,7 +53,6 @@ function downloadFile(url, dest, visited = new Set()) {
                     'Accept': '*/*'
                 }
             }, res => {
-                // Handle redirects
                 if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
                     const location = res.headers.location;
                     if (!location) return reject(new Error(`HTTP ${res.statusCode} without Location`));
@@ -85,13 +83,11 @@ function downloadFile(url, dest, visited = new Set()) {
 }
 
 async function extractZip(zipPath, outDir) {
-    // Try to use platform tools; no extra npm modules required
     if (process.platform === 'win32') {
         const cmd = `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${outDir.replace(/\\/g, '/')}' -Force"`;
         await run(cmd);
         return;
     }
-    // Linux/mac: try unzip, else 7z, else busybox unzip
     try {
         await run('command -v unzip');
         await run(`unzip -o '${zipPath}' -d '${outDir}'`);
@@ -139,14 +135,11 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
     if (fs.existsSync(extractTo)) fs.rmSync(extractTo, { recursive: true, force: true });
     await extractZip(zipPath, extractTo);
 
-    // Find the top-level extracted folder (GitHub zips create REPO-branch folder)
     const [root] = fs.readdirSync(extractTo).map(n => path.join(extractTo, n));
     const srcRoot = fs.existsSync(root) && fs.lstatSync(root).isDirectory() ? root : extractTo;
 
-    // Copy over while preserving runtime dirs/files
     const ignore = ['node_modules', '.git', 'session', 'tmp', 'tmp/', 'temp', 'data', 'baileys_store.json'];
     const copied = [];
-    // Preserve ownerNumber from existing settings.js if present
     let preservedOwner = null;
     let preservedBotOwner = null;
     try {
@@ -168,7 +161,6 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
             }
         } catch {}
     }
-    // Cleanup extracted directory
     try { fs.rmSync(extractTo, { recursive: true, force: true }); } catch {}
     try { fs.rmSync(zipPath, { force: true }); } catch {}
     return { copiedFiles: copied };
@@ -176,18 +168,22 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
 
 async function restartProcess(sock, chatId, message) {
     try {
-        await sock.sendMessage(chatId, { text: '✅ Update complete! Restarting…' }, { quoted: message });
+        // Tuma audio fupi ya mafanikio kama Voice Note kabla ya kuzima bot
+        const successMusic = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"; 
+        await sock.sendMessage(chatId, {
+            audio: { url: successMusic },
+            mimetype: "audio/mp4",
+            ptt: true
+        }, { quoted: message });
     } catch {}
-    try {
-        // Preferred: PM2
-        await run('pm2 restart all');
-        return;
-    } catch {}
-    // Panels usually auto-restart when the process exits.
-    // Exit after a short delay to allow the above message to flush.
-    setTimeout(() => {
-        process.exit(0);
-    }, 500);
+    
+    setTimeout(async () => {
+        try {
+            await run('pm2 restart all');
+        } catch {
+            process.exit(0);
+        }
+    }, 2000);
 }
 
 async function updateCommand(sock, chatId, message, zipOverride) {
@@ -195,37 +191,55 @@ async function updateCommand(sock, chatId, message, zipOverride) {
     const isOwner = await isOwnerOrSudo(senderId, sock, chatId);
     
     if (!message.key.fromMe && !isOwner) {
-        await sock.sendMessage(chatId, { text: 'Only bot owner or sudo can use .update' }, { quoted: message });
+        await sock.sendMessage(chatId, { text: '❌ *Access Denied:* Only the bot owner or sudo users can initiate an update.' }, { quoted: message });
         return;
     }
+    
     try {
-        // Minimal UX
-        await sock.sendMessage(chatId, { text: '🔄 Updating the bot, please wait…' }, { quoted: message });
+        // 1. Kuvuta Picha ya Wasifu ya Mtumiaji
+        let userPfp;
+        try {
+            userPfp = await sock.profilePictureUrl(senderId, 'image');
+        } catch (e) {
+            userPfp = "https://wallpapercave.com/wp/wp6331904.jpg"; // Picha mbadala ya cyber
+        }
+
+        // 2. Tuma Ujumbe wa Mwanzo wenye muonekano wa picha
+        const startCaption = `⚡ *TIMNASA_TMD_X CORE UPDATER* ⚡\n\n` +
+                             `🔄 *Status:* INITIALIZING CORE UPDATE...\n` +
+                             `📡 *Source:* GitHub Repository\n\n` +
+                             `_"Downloading fresh codebase data. Please wait intact..."_`;
+
+        await sock.sendMessage(chatId, { image: { url: userPfp }, caption: startCaption }, { quoted: message });
+
+        let updateSummary = '';
+
         if (await hasGitRepo()) {
-            // silent
-            const { oldRev, newRev, alreadyUpToDate, commits, files } = await updateViaGit();
-            // Short message only: version info
-            const summary = alreadyUpToDate ? `✅ Already up to date: ${newRev}` : `✅ Updated to ${newRev}`;
+            const { oldRev, newRev, alreadyUpToDate } = await updateViaGit();
+            updateSummary = alreadyUpToDate 
+                ? `⚡ *SYSTEM UPDATE LOG* ⚡\n\n✅ *Status:* Already Up To Date!\n🔖 *Commit:* ${newRev}`
+                : `⚡ *SYSTEM UPDATE LOG* ⚡\n\n✅ *Status:* Core Upgraded Successfully!\n🔖 *New Commit:* ${newRev}\n⚙️ *Modules:* Re-indexed`;
+            
             console.log('[update] summary generated');
-            // silent
             await run('npm install --no-audit --no-fund');
         } else {
-            const { copiedFiles } = await updateViaZip(sock, chatId, message, zipOverride);
-            // silent
+            await updateViaZip(sock, chatId, message, zipOverride);
+            updateSummary = `⚡ *SYSTEM UPDATE LOG* ⚡\n\n✅ *Status:* ZIP Update Applied Successfully!\n📂 *Files:* Extracted & Merged.`;
         }
-        try {
-            const v = require('../settings').version || '';
-            await sock.sendMessage(chatId, { text: `✅ Update done. Restarting…` }, { quoted: message });
-        } catch {
-            await sock.sendMessage(chatId, { text: '✅ Restared Successfully\n Type .ping to check latest version.' }, { quoted: message });
-        }
+
+        // 3. Tuma majibu ya mwisho baada ya update kukamilika
+        const currentVersion = settings.version || '1.0.0';
+        const finalMessage = `${updateSummary}\n📦 *Version:* v${currentVersion}\n\n🔄 _The system is restarting now to clear cache and apply changes..._`;
+        
+        await sock.sendMessage(chatId, { text: finalMessage }, { quoted: message });
+        
+        // 4. Trigger restart pamoja na Audio
         await restartProcess(sock, chatId, message);
+
     } catch (err) {
         console.error('Update failed:', err);
-        await sock.sendMessage(chatId, { text: `❌ Update failed:\n${String(err.message || err)}` }, { quoted: message });
+        await sock.sendMessage(chatId, { text: `❌ *Update Core Failure:*\n\n\`\`\`${String(err.message || err)}\`\`\`` }, { quoted: message });
     }
 }
 
 module.exports = updateCommand;
-
-
