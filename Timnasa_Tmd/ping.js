@@ -21,26 +21,57 @@ function formatTime(seconds) {
 async function pingCommand(sock, chatId, message) {
     try {
         const start = Date.now();
-        await sock.sendMessage(chatId, { text: 'Pong!' }, { quoted: message });
+        // Kutuma ujumbe wa kwanza wa majaribio
+        const msg = await sock.sendMessage(chatId, { text: '⚡ *Testing system speed...*' }, { quoted: message });
         const end = Date.now();
         const ping = Math.round((end - start) / 2);
 
         const uptimeInSeconds = process.uptime();
         const uptimeFormatted = formatTime(uptimeInSeconds);
 
-        const botInfo = `
-┏━━〔 🤖 Timnasa_Tmd-X 〕 ━━┓
-┃🚀┃ Ping     : ${ping} ms
-┃⏱️┃ Uptime   : ${uptimeFormatted}
-┃🔖┃ Version  : v${settings.version}
-┗━━━━━━━━━━━━━━━━━━━━━┛`.trim();
+        // 1. Kuchukua namba ya aliyetuma amri (Sender JID)
+        const sender = message.key.participant || message.key.remoteJid;
 
-        // Reply to the original message with the bot info
-        await sock.sendMessage(chatId, { text: botInfo},{ quoted: message });
+        // 2. Kuchukua Picha ya Wasifu ya mtumiaji (User Profile Picture)
+        let userPfp;
+        try {
+            userPfp = await sock.profilePictureUrl(sender, 'image');
+        } catch (e) {
+            // Picha ya cyberpunk mbadala kama mtumiaji hana pfp au imefichwa
+            userPfp = "https://wallpapercave.com/wp/wp6331904.jpg"; 
+        }
+
+        // 3. Muonekano mpya wa kisasa (Cyberpunk Style)
+        const botInfo = `
+⚡ *TIMNASA MULTIPLE BOT SYSTEM* ⚡
+
+┏━━━━━━〔 🤖 STATUS 〕━━━━━━┓
+┃ 🌐 Status   : ONLINE
+┃ 🚀 Ping     : ${ping} ms
+┃ ⏱️ Uptime   : ${uptimeFormatted}
+┃ 🔖 Version  : v${settings.version || "1.0.0"}
+┃ 🔒 Security : ENCRYPTED
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+_"Breaching limitations, automating the future."_`.trim();
+
+        // 4. Kutuma Picha ya Mtumiaji ikiwa na maelezo ya Bot (Caption)
+        await sock.sendMessage(chatId, { 
+            image: { url: userPfp }, 
+            caption: botInfo 
+        }, { quoted: message });
+
+        // 5. Kutuma Music/Audio fupi ya kisasa (Kama Voice Note ya sekunde chache)
+        const musicUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"; 
+        await sock.sendMessage(chatId, {
+            audio: { url: musicUrl },
+            mimetype: "audio/mp4",
+            ptt: true // Inatokea kama sauti iliyorekodiwa hapo hapo
+        }, { quoted: message });
 
     } catch (error) {
         console.error('Error in ping command:', error);
-        await sock.sendMessage(chatId, { text: '❌ Failed to get bot status.' });
+        await sock.sendMessage(chatId, { text: '❌ Failed to get bot status.' }, { quoted: message });
     }
 }
 
