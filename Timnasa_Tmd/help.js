@@ -3,278 +3,285 @@ const fs = require('fs');
 const path = require('path');
 
 async function helpCommand(sock, chatId, message) {
-    const helpMessage = `
-┏━━━━━━━━━━━━━━━━━━━━┓
-┃*🤖 ${settings.botName || 'Timnasa_Tmd-X'}*  
-┃Version: *${settings.version || '3.0.0'}*
-┃By ${settings.botOwner || 'Hans_Tz'}
-┗━━━━━━━━━━━━━━━━━━━━┛
+    // Kuchukua ID ya aliyetuma amri (sender)
+    const sender = message.key.participant || message.key.remoteJid;
+    
+    // Kuchukua Jina la aliyetuma amri
+    const pushName = message.pushName || "Cyber_User";
 
-> _*Available Commands:*_
+    // Muonekano wa Kisasa wa Mwaka 2036 (Quantum Cyberpunk Menu)
+    const rawMenuText = `⚡ ─── 『 *${settings.botName || 'TIMNASA_TMD-X'}* 』 ─── ⚡
+🌐 *[QUANTUM CORE V4.0.0 - YEAR 2036]*
+👤 *Operator:* ${pushName}
+👑 *Developer:* ${settings.botOwner || 'Timnasa Timoth'}
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
 
-━━━━━━━━━━━━━━━━━━━━┓
- \`🌐 General Commands\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ help or .menu
-> ➤ ┃ ping
-> ➤ ┃ alive
-> ➤ ┃ tts <text>
-> ➤ ┃ owner
-> ➤ ┃ joke
-> ➤ ┃ quote
-> ➤ ┃ fact
-> ➤ ┃ weather <city>
-> ➤ ┃ news
-> ➤ ┃ attp <text>
-> ➤ ┃ lyrics <song_title>
-> ➤ ┃ 8ball <question>
-> ➤ ┃ groupinfo
-> ➤ ┃ staff or .admins 
-> ➤ ┃ vv
-> ➤ ┃ trt <text> <lang>
-> ➤ ┃ ss <link>
-> ➤ ┃ jid
-> ➤ ┃ url
-━━━━━━━━━━━━━━━━━━━━┛
+_“Automating realities, expanding digital horizons.”_
 
-━━━━━━━━━━━━━━━━━━━━┓
-  \`👮‍♂️ Admin Commands\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ ban @user
-> ➤ ┃ promote @user
-> ➤ ┃ demote @user
-> ➤ ┃ mute <minutes>
-> ➤ ┃ unmute
-> ➤ ┃ delete or .del
-> ➤ ┃ kick @user
-> ➤ ┃ warnings @user
-> ➤ ┃ warn @user
-> ➤ ┃ antilink
-> ➤ ┃ antibadword
-> ➤ ┃ clear
-> ➤ ┃ tag <message>
-> ➤ ┃ tagall
-> ➤ ┃ tagnotadmin
-> ➤ ┃ hidetag <message>
-> ➤ ┃ chatbot
-> ➤ ┃ resetlink
-> ➤ ┃ antitag <on/off>
-> ➤ ┃ welcome <on/off>
-> ➤ ┃ goodbye <on/off>
-> ➤ ┃ setgdesc <description>
-> ➤ ┃ setgname <new name>
-> ➤ ┃ setgpp (reply to image)
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+      🌐 GENERAL COMMANDS
+╚════════════════════╝
+➤ ┃ help or .menu
+➤ ┃ ping
+➤ ┃ alive
+➤ ┃ tts <text>
+➤ ┃ owner
+➤ ┃ joke
+➤ ┃ quote
+➤ ┃ fact
+➤ ┃ weather <city>
+➤ ┃ news
+➤ ┃ attp <text>
+➤ ┃ lyrics <song_title>
+➤ ┃ 8ball <question>
+➤ ┃ groupinfo
+➤ ┃ staff or .admins 
+➤ ┃ vv
+➤ ┃ trt <text> <lang>
+➤ ┃ ss <link>
+➤ ┃ jid
+➤ ┃ url
 
-━━━━━━━━━━━━━━━━━━━━┓
-   \`🔒 Owner Commands\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ mode <public/private>
-> ➤ ┃ clearsession
-> ➤ ┃ antidelete
-> ➤ ┃ cleartmp
-> ➤ ┃ update
-> ➤ ┃ settings
-> ➤ ┃ setpp <reply to image>
-> ➤ ┃ autoreact <on/off>
-> ➤ ┃ autostatus <on/off>
-> ➤ ┃ autostatus react <on/off>
-> ➤ ┃ autotyping <on/off>
-> ➤ ┃ autoread <on/off>
-> ➤ ┃ anticall <on/off>
-> ➤ ┃ pmblocker <on/off/status>
-> ➤ ┃ pmblocker setmsg <text>
-> ➤ ┃ setmention <reply to msg>
-> ➤ ┃ mention <on/off>
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+      👮‍♂️ ADMIN COMMANDS
+╚════════════════════╝
+➤ ┃ ban @user
+➤ ┃ promote @user
+➤ ┃ demote @user
+➤ ┃ mute <minutes>
+➤ ┃ unmute
+➤ ┃ delete or .del
+➤ ┃ kick @user
+➤ ┃ warnings @user
+➤ ┃ warn @user
+➤ ┃ antilink
+➤ ┃ antibadword
+➤ ┃ clear
+➤ ┃ tag <message>
+➤ ┃ tagall
+➤ ┃ tagnotadmin
+➤ ┃ hidetag <message>
+➤ ┃ chatbot
+➤ ┃ resetlink
+➤ ┃ antitag <on/off>
+➤ ┃ welcome <on/off>
+➤ ┃ goodbye <on/off>
+➤ ┃ setgdesc <description>
+➤ ┃ setgname <new name>
+➤ ┃ setgpp (reply to image)
 
-━━━━━━━━━━━━━━━━━━━━┓
-\`🎨Image/Sticker Commands\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ blur <image>
-> ➤ ┃ simage <reply to sticker>
-> ➤ ┃ sticker <reply to image>
-> ➤ ┃ removebg
+╔════════════════════╗
+      🔒 OWNER COMMANDS
+╚════════════════════╝
+➤ ┃ mode <public/private>
+➤ ┃ clearsession
+➤ ┃ antidelete
+➤ ┃ cleartmp
+➤ ┃ update
+➤ ┃ settings
+➤ ┃ setpp <reply to image>
+➤ ┃ autoreact <on/off>
+➤ ┃ autostatus <on/off>
+➤ ┃ autostatus react <on/off>
+➤ ┃ autotyping <on/off>
+➤ ┃ autoread <on/off>
+➤ ┃ anticall <on/off>
+➤ ┃ pmblocker <on/off/status>
+➤ ┃ pmblocker setmsg <text>
+➤ ┃ setmention <reply to msg>
+➤ ┃ mention <on/off>
+
+╔════════════════════╗
+   🎨 IMAGE/STICKER COMMANDS
+╚════════════════════╝
+➤ ┃ blur <image>
+➤ ┃ simage <reply to sticker>
+➤ ┃ sticker <reply to image>
+➤ ┃ removebg
 > ➤ ┃ remini
-> ➤ ┃ crop <reply to image>
-> ➤ ┃ tgsticker <Link>
-> ➤ ┃ meme
-> ➤ ┃ take <packname> 
-> ➤ ┃ emojimix <emj1>+<emj2>
-> ➤ ┃ igs <insta link>
-> ➤ ┃ igsc <insta link>
-━━━━━━━━━━━━━━━━━━━━┛
+➤ ┃ crop <reply to image>
+➤ ┃ tgsticker <Link>
+➤ ┃ meme
+➤ ┃ take <packname> 
+➤ ┃ emojimix <emj1>+<emj2>
+➤ ┃ igs <insta link>
+➤ ┃ igsc <insta link>
 
+╔════════════════════╗
+      🖼️ PIES COMMANDS
+╚════════════════════╝
+➤ ┃ pies <country>
+➤ ┃ china 
+➤ ┃ indonesia 
+➤ ┃ japan 
+➤ ┃ korea 
+➤ ┃ hijab
 
-━━━━━━━━━━━━━━━━━━━━┓
- \`🖼️ *Pies Commands*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ pies <country>
-> ➤ ┃ china 
-> ➤ ┃ indonesia 
-> ➤ ┃ japan 
-> ➤ ┃ korea 
-> ➤ ┃ hijab
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+      🎮 GAME COMMANDS
+╚════════════════════╝
+➤ ┃ tictactoe @user
+➤ ┃ hangman
+➤ ┃ guess <letter>
+➤ ┃ trivia
+➤ ┃ answer <answer>
+➤ ┃ truth
+➤ ┃ dare
 
-━━━━━━━━━━━━━━━━━━━━┓
- \`🎮 *Game Commands*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ tictactoe @user
-> ➤ ┃ hangman
-> ➤ ┃ guess <letter>
-> ➤ ┃ trivia
-> ➤ ┃ answer <answer>
-> ➤ ┃ truth
-> ➤ ┃ dare
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+       🤖 AI COMMANDS
+╚════════════════════╝
+➤ ┃ gpt <question>
+➤ ┃ gemini <question>
+➤ ┃ imagine <prompt>
+➤ ┃ flux <prompt>
+➤ ┃ sora <prompt>
 
-━━━━━━━━━━━━━━━━━━━━┓
-  \`🤖 *AI Commands*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ gpt <question>
-> ➤ ┃ gemini <question>
-> ➤ ┃ imagine <prompt>
-> ➤ ┃ flux <prompt>
-> ➤ ┃ sora <prompt>
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+       🎯 FUN COMMANDS
+╚════════════════════╝
+➤ ┃ compliment @user
+➤ ┃ insult @user
+➤ ┃ flirt 
+➤ ┃ shayari
+➤ ┃ goodnight
+➤ ┃ roseday
+➤ ┃ character @user
+➤ ┃ wasted @user
+➤ ┃ ship @user
+➤ ┃ simp @user
+➤ ┃ stupid @user [text]
 
-━━━━━━━━━━━━━━━━━━━━┓
-  \`🎯 *Fun Commands*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ compliment @user
-> ➤ ┃ insult @user
-> ➤ ┃ flirt 
-> ➤ ┃ shayari
-> ➤ ┃ goodnight
-> ➤ ┃ roseday
-> ➤ ┃ character @user
-> ➤ ┃ wasted @user
-> ➤ ┃ ship @user
-> ➤ ┃ simp @user
-> ➤ ┃ stupid @user [text]
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+      🔤 TEXTMAKER
+╚════════════════════╝
+➤ ┃ metallic <text>
+➤ ┃ ice <text>
+➤ ┃ snow <text>
+➤ ┃ impressive <text>
+➤ ┃ matrix <text>
+➤ ┃ light <text>
+➤ ┃ neon <text>
+➤ ┃ devil <text>
+➤ ┃ purple <text>
+➤ ┃ thunder <text>
+➤ ┃ leaves <text>
+➤ ┃ 1917 <text>
+➤ ┃ arena <text>
+➤ ┃ hacker <text>
+➤ ┃ sand <text>
+➤ ┃ blackpink <text>
+➤ ┃ glitch <text>
+➤ ┃ fire <text>
 
-━━━━━━━━━━━━━━━━━━━━┓
-    \`🔤 *Textmaker*\`:
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ metallic <text>
-> ➤ ┃ ice <text>
-> ➤ ┃ snow <text>
-> ➤ ┃ impressive <text>
-> ➤ ┃ matrix <text>
-> ➤ ┃ light <text>
-> ➤ ┃ neon <text>
-> ➤ ┃ devil <text>
-> ➤ ┃ purple <text>
-> ➤ ┃ thunder <text>
-> ➤ ┃ leaves <text>
-> ➤ ┃ 1917 <text>
-> ➤ ┃ arena <text>
-> ➤ ┃ hacker <text>
-> ➤ ┃ sand <text>
-> ➤ ┃ blackpink <text>
-> ➤ ┃ glitch <text>
-> ➤ ┃ fire <text>
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+      📥 DOWNLOADER
+╚════════════════════╝
+➤ ┃ play <song_name>
+➤ ┃ song <song_name>
+➤ ┃ spotify <query>
+➤ ┃ instagram <link>
+➤ ┃ facebook <link>
+➤ ┃ tiktok <link>
+➤ ┃ video <song name>
+➤ ┃ ytmp4 <Link>
 
-━━━━━━━━━━━━━━━━━━━━┓
-    \`📥 *Downloader*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ play <song_name>
-> ➤ ┃ song <song_name>
-> ➤ ┃ spotify <query>
-> ➤ ┃ instagram <link>
-> ➤ ┃ facebook <link>
-> ➤ ┃ tiktok <link>
-> ➤ ┃ video <song name>
-> ➤ ┃ ytmp4 <Link>
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+        🧩 MISC
+╚════════════════════╝
+➤ ┃ heart
+➤ ┃ horny
+➤ ┃ circle
+➤ ┃ lgbt
+➤ ┃ lolice
+➤ ┃ its-so-stupid
+➤ ┃ namecard 
+➤ ┃ oogway
+➤ ┃ tweet
+➤ ┃ ytcomment 
+➤ ┃ comrade 
+➤ ┃ gay 
+➤ ┃ glass 
+➤ ┃ jail 
+➤ ┃ passed 
+➤ ┃ triggered
 
-━━━━━━━━━━━━━━━━━━━━┓
-         \`🧩 *MISC*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ heart
-> ➤ ┃ horny
-> ➤ ┃ circle
-> ➤ ┃ lgbt
-> ➤ ┃ lolice
-> ➤ ┃ its-so-stupid
-> ➤ ┃ namecard 
-> ➤ ┃ oogway
-> ➤ ┃ tweet
-> ➤ ┃ ytcomment 
-> ➤ ┃ comrade 
-> ➤ ┃ gay 
-> ➤ ┃ glass 
-> ➤ ┃ jail 
-> ➤ ┃ passed 
-> ➤ ┃ triggered
-━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗
+       🖼️ ANIME
+╚════════════════════╝
+➤ ┃ nom 
+➤ ┃ poke 
+➤ ┃ cry 
+➤ ┃ kiss 
+➤ ┃ pat 
+➤ ┃ hug 
+➤ ┃ wink 
+➤ ┃ facepalm 
 
+╔════════════════════╗
+     💻 GITHUB COMMANDS
+╚════════════════════╝
+➤ ┃ git
+➤ ┃ github
+➤ ┃ sc
+➤ ┃ script
+➤ ┃ repo
 
-━━━━━━━━━━━━━━━━━━━━┓
-        \`🖼️ *ANIME*:\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ nom 
-> ➤ ┃ poke 
-> ➤ ┃ cry 
-> ➤ ┃ kiss 
-> ➤ ┃ pat 
-> ➤ ┃ hug 
-> ➤ ┃ wink 
-> ➤ ┃ facepalm 
-━━━━━━━━━━━━━━━━━━━━┛
+⚡ Join our channel for updates ⚡`;
 
-━━━━━━━━━━━━━━━━━━━━┓
-\`💻 *Github Commands:*\`
-━━━━━━━━━━━━━━━━━━━━┛
-> ➤ ┃ git
-> ➤ ┃ github
-> ➤ ┃ sc
-> ➤ ┃ script
-> ➤ ┃ repo
-━━━━━━━━━━━━━━━━━━━━┛
+    // Hesabu idadi ya commands zote kulingana na alama ya "➤" au "> ➤"
+    const commandCount = (rawMenuText.match(/➤/g) || []).length;
 
-Join our channel for updates:`;
+    // Kuingiza idadi ya commands juu ya menu kwa usahihi
+    const helpMessage = rawMenuText.replace(
+        "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬",
+        `📊 *Total Commands:* ${commandCount}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`
+    );
 
     try {
-        const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
+        let finalImageBuffer;
         
-        if (fs.existsSync(imagePath)) {
-            const imageBuffer = fs.readFileSync(imagePath);
-            
+        try {
+            // Jaribu kuchukua Picha ya Wasifu ya alietuma command
+            const pfpUrl = await sock.profilePictureUrl(sender, 'image');
+            const axios = require('axios');
+            const response = await axios.get(pfpUrl, { responseType: 'arraybuffer' });
+            finalImageBuffer = Buffer.from(response.data, 'binary');
+        } catch (e) {
+            // Kama hana picha au imefeli, tumia picha iliyopo kwenye assets kama fallback
+            const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
+            if (fs.existsSync(imagePath)) {
+                finalImageBuffer = fs.readFileSync(imagePath);
+            }
+        }
+
+        const newsletterConfig = {
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363406146813524@newsletter',
+                newsletterName: 'Timnasa_Tmd-X',
+                serverMessageId: 1
+            }
+        };
+
+        if (finalImageBuffer) {
             await sock.sendMessage(chatId, {
-                image: imageBuffer,
+                image: finalImageBuffer,
                 caption: helpMessage,
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363406146813524@newsletter',
-                        newsletterName: 'Timnasa_Tmd-X',
-                        serverMessageId: -1
-                    }
-                }
-            },{ quoted: message });
+                contextInfo: newsletterConfig
+            }, { quoted: message });
         } else {
-            console.error('Bot image not found at:', imagePath);
+            // Kama hakuna kabisa picha, tuma kama maandishi ya kawaida lakini yenye muonekano wa newsletter
             await sock.sendMessage(chatId, { 
                 text: helpMessage,
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363406146813524@newsletter',
-                        newsletterName: 'Timnasa_Tmd-X',
-                        serverMessageId: -1
-                    } 
-                }
-            });
+                contextInfo: newsletterConfig
+            }, { quoted: message });
         }
+
     } catch (error) {
-        console.error('Error in help command:', error);
-        await sock.sendMessage(chatId, { text: helpMessage });
+        console.error('Error in futuristic help command:', error);
+        await sock.sendMessage(chatId, { text: helpMessage }, { quoted: message });
     }
 }
 
