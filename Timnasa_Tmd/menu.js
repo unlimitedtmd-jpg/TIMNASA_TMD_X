@@ -1,149 +1,125 @@
-const config = require('../config');
-const moment = require('moment-timezone');
-const { cmd, commands } = require('../command');
+const settings = require('../settings');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 
-// =====================
-// Simple Greeting Logic
-// =====================
-const getGreeting = () => {
-    const hour = moment().tz('Africa/Nairobi').hour();
+async function helpCommand(sock, chatId, message) {
+    const sender = message.key.participant || message.key.remoteJid;
+    const pushName = message.pushName || "Cyber_User";
+    const prefix = settings.prefix || '.'; // Inasoma prefix ya bot yako kiotomatiki
 
-    if (hour >= 5 && hour < 12) return "Good Morning 🌅";
-    if (hour >= 12 && hour < 17) return "Good Afternoon ☀️";
-    if (hour >= 17 && hour < 21) return "Good Evening 🌆";
-    return "Good Night 😴";
-};
-
-// =====================
-// MENU COMMAND
-// =====================
-cmd({
-    pattern: "menu2",
-    alias: ["help2", "allmenu2"],
-    react: "✨",
-    category: "main",
-    desc: "Show bot menu",
-    filename: __filename
-},
-async (conn, mek, m, { from, sender, pushName, reply }) => {
+    // ========================================================
+    // 1. AUTOMATIC COMMAND SCANNER (Kutafuta amri kiotomatiki)
+    // ========================================================
+    const commandsDir = path.join(__dirname, '../commands'); // Badilisha kuwa '../plugins' kama folder lina jina hilo
+    const categories = {};
+    let totalCommands = 0;
 
     try {
-        // 1. Kutengeneza Quoted Message ya vCard iliyo salama
-        const fakevCard = {
-            key: {
-                fromMe: false,
-                participant: sender, 
-                remoteJid: from
-            },
-            message: {
-                contactMessage: {
-                    displayName: pushName || "User",
-                    vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${pushName || "User"}\nEND:VCARD`
+        if (fs.existsSync(commandsDir)) {
+            const files = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
+            
+            for (const file of files) {
+                const commandFile = require(path.join(commandsDir, file));
+                
+                // Kusoma amri zenye muundo sahihi wa 'pattern'
+                if (commandFile && commandFile.pattern) {
+                    const category = (commandFile.category || 'MISC').toUpperCase();
+                    const cmdName = commandFile.pattern.split('|')[0].trim();
+                    
+                    if (!categories[category]) {
+                        categories[category] = [];
+                    }
+                    categories[category].push(cmdName);
+                    totalCommands++;
                 }
             }
-        };
-
-        // 2. Kuchukua Picha ya Wasifu (User Profile Picture) au Group Pfp
-        let menuImage;
-        try {
-            menuImage = await conn.profilePictureUrl(sender, 'image');
-        } catch (e) {
-            // Picha mbadala ya Catbox isipopatikana ya mtumiaji
-            menuImage = "https://files.catbox.moe/aapw1p.png"; 
         }
+    } catch (err) {
+        console.error("Error scanning commands directory:", err);
+    }
 
-        const now = moment().tz("Africa/Nairobi");
-        const date = now.format("DD/MM/YYYY");
-        const time = now.format("HH:mm:ss");
+    // ========================================================
+    // 2. HEADER YA MENU (Cyberpunk Quantum Style)
+    // ========================================================
+    let helpMessage = `⚡ ─── 『 *${settings.botName || 'TIMNASA_TMD-X'}* 』 ─── ⚡\n` +
+                      `🌐 *[QUANTUM CORE V4.0.0]*\n` +
+                      `👤 *Operator:* ${pushName}\n` +
+                      `👑 *Developer:* ${settings.botOwner || 'Timnasa Timoth'}\n` +
+                      `📊 *Total Loaded Commands:* ${totalCommands}\n` +
+                      `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+                      `_“Breaching limitations, automating the future.”_\n`;
 
-        // Kurekebisha tatizo la conn.getName linalofeli mara nyingi
-        let userName = pushName || m.pushName || "User";
-        const greeting = getGreeting();
-
-        // =====================
-        // Organize Commands
-        // =====================
-        const commandsByCategory = {};
-        const activeCommands = commands.filter(cmd => cmd.pattern && !cmd.dontAdd && cmd.category);
-        const totalCommands = activeCommands.length; 
-
-        activeCommands.forEach(cmd => {
-            const category = cmd.category.toUpperCase();
-            const name = cmd.pattern.split("|")[0].trim();
-            if (!commandsByCategory[category])
-                commandsByCategory[category] = [];
-            commandsByCategory[category].push(name);
-        });
-
-        const sortedCategories = Object.keys(commandsByCategory).sort();
-
-        // =====================
-        // HEADER (Cyberpunk Style)
-        // =====================
-        let menu = `⚡ *TIMNASA MULTIPLE BOT MENU* ⚡\n\n` +
-                   ` ${greeting} *${userName}*\n` +
-                   ` 🗓️ *Date:* ${date}\n` +
-                   ` ⏰ *Time:* ${time}\n` +
-                   ` 📊 *Total Commands:* ${totalCommands}\n\n` +
-                   ` _"Breaching limitations, automating the future."_\n` +
-                   `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n`;
-
-        // =====================
-        // COMMAND LIST
-        // =====================
-        for (const category of sortedCategories) {
-            menu += `\n*╭─❖ ⚡ ${category} ⚡ ❖*\n`;
-            const sortedCommands = commandsByCategory[category].sort();
-            for (const cmdName of sortedCommands) {
-                const prefix = config.PREFIX || '.'; 
-                menu += `*│❍ ${prefix}${cmdName}*\n`;
+    // ========================================================
+    // 3. GENERATE ORODHA YA COMMANDS KIOTOMATIKI KWA MAKUNDI
+    // ========================================================
+    const sortedCategories = Object.keys(categories).sort();
+    
+    if (sortedCategories.length > 0) {
+        for (const cat of sortedCategories) {
+            helpMessage += `\n╔════════════════════╗\n` +
+                           `      🛸 ${cat} COMMANDS\n` +
+                           `╚════════════════════╝\n`;
+            
+            const sortedCmds = categories[cat].sort();
+            for (const cmd of sortedCmds) {
+                helpMessage += `➤ ┃ ${prefix}${cmd}\n`;
             }
-            menu += `*╰──────────────❖*\n`;
+        }
+    } else {
+        helpMessage += `\n⚠️ _No automatic commands detected. Check your commands folder path._\n`;
+    }
+
+    helpMessage += `\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n⚡ TIMNASA TIMOTH © 2026 ⚡`;
+
+    // ========================================================
+    // 4. KUTAFUTA PICHA YA WASIFU NA KUTUMA MENU
+    // ========================================================
+    try {
+        let finalImageBuffer;
+        
+        try {
+            // Inapakua picha ya wasifu ya alietuma amri
+            const pfpUrl = await sock.profilePictureUrl(sender, 'image');
+            const response = await axios.get(pfpUrl, { responseType: 'arraybuffer' });
+            finalImageBuffer = Buffer.from(response.data, 'binary');
+        } catch (e) {
+            // Fallback: Kama mtumiaji hana picha, inasoma picha yako ya default kwenye assets
+            const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
+            if (fs.existsSync(imagePath)) {
+                finalImageBuffer = fs.readFileSync(imagePath);
+            }
         }
 
-        // =====================
-        // FOOTER
-        // =====================
-        menu += `\n` +
-                `┌──────────────❖\n` +
-                `│ TIMNASA TIMOTH © 2026\n` +
-                `└──────────────❖\n`;
-
-        // =====================
-        // CONTEXT INFO (NEWSLETTER)
-        // =====================
-        const newsletterContextInfo = {
-            mentionedJid: [sender],
+        // Muundo wa ujumbe kama ulio mbelezwa (Newsletter Style)
+        const newsletterConfig = {
             forwardingScore: 999,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-                newsletterJid: config.NEWSLETTER_JID || '120363421513037430@newsletter',
-                newsletterName: config.OWNER_NAME || 'Timnasa Timoth',
+                newsletterJid: '120363406146813524@newsletter',
+                newsletterName: 'Timnasa_Tmd-X',
                 serverMessageId: 1
             }
         };
 
-        // =====================
-        // SEND MENU
-        // =====================
-        await conn.sendMessage(from, {
-            image: { url: menuImage },
-            caption: menu,
-            contextInfo: {
-                ...newsletterContextInfo,
-                externalAdReply: {
-                    title: "TIMNASA_TMD_X",
-                    body: `Hello ${userName}, System Active`,
-                    mediaType: 1,
-                    thumbnailUrl: menuImage, // Imeongezwa kuzuia error ya kutotuma picha
-                    sourceUrl: "https://github.com", // Unaweza kuweka link ya repo yako hapa
-                    renderLargerThumbnail: true 
-                }
-            }
-        }, { quoted: fakevCard });
+        if (finalImageBuffer) {
+            await sock.sendMessage(chatId, {
+                image: finalImageBuffer,
+                caption: helpMessage,
+                contextInfo: newsletterConfig
+            }, { quoted: message });
+        } else {
+            await sock.sendMessage(chatId, { 
+                text: helpMessage,
+                contextInfo: newsletterConfig
+            }, { quoted: message });
+        }
 
-    } catch (e) {
-        console.error("Error in menu2 command:", e);
-        reply("❌ Error loading menu. Angalia log za terminal yako.");
+    } catch (error) {
+        console.error('Error in list command:', error);
+        await sock.sendMessage(chatId, { text: helpMessage }, { quoted: message });
     }
-});
+}
+
+// Hamisha faili hili ili kuunganishwa na index/handler kuu ya amri zako
+module.exports = helpCommand;
