@@ -28,11 +28,11 @@ cmd({
 async (conn, mek, m, { from, sender, pushName, reply }) => {
 
     try {
-        // 1. Kutengeneza Quoted Message ya vCard iliyo salama na isiyofeli
+        // 1. Kutengeneza Quoted Message ya vCard iliyo salama
         const fakevCard = {
             key: {
                 fromMe: false,
-                participant: sender, // Inatumia sender halisi kuzuia error
+                participant: sender, 
                 remoteJid: from
             },
             message: {
@@ -43,12 +43,12 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
             }
         };
 
-        // 2. Kuchukua Picha ya Wasifu (User Profile Picture)
+        // 2. Kuchukua Picha ya Wasifu (User Profile Picture) au Group Pfp
         let menuImage;
         try {
             menuImage = await conn.profilePictureUrl(sender, 'image');
         } catch (e) {
-            // Kama mtumiaji hana picha, itatumia hii ya Catbox uliyoweka mwanzo
+            // Picha mbadala ya Catbox isipopatikana ya mtumiaji
             menuImage = "https://files.catbox.moe/aapw1p.png"; 
         }
 
@@ -56,7 +56,8 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
         const date = now.format("DD/MM/YYYY");
         const time = now.format("HH:mm:ss");
 
-        let userName = pushName || mek.pushName || conn.getName(sender) || "User";
+        // Kurekebisha tatizo la conn.getName linalofeli mara nyingi
+        let userName = pushName || m.pushName || "User";
         const greeting = getGreeting();
 
         // =====================
@@ -94,7 +95,6 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
             menu += `\n*╭─❖ ⚡ ${category} ⚡ ❖*\n`;
             const sortedCommands = commandsByCategory[category].sort();
             for (const cmdName of sortedCommands) {
-                // Inasoma prefix moja kwa moja kutoka kwenye config yako
                 const prefix = config.PREFIX || '.'; 
                 menu += `*│❍ ${prefix}${cmdName}*\n`;
             }
@@ -133,15 +133,17 @@ async (conn, mek, m, { from, sender, pushName, reply }) => {
                 ...newsletterContextInfo,
                 externalAdReply: {
                     title: "TIMNASA_TMD_X",
-                    body: `Hello ${userName}, Active & Stable`,
+                    body: `Hello ${userName}, System Active`,
                     mediaType: 1,
-                    renderLargerThumbnail: true // Imewekwa TRUE ili picha ionekane kubwa na safi
+                    thumbnailUrl: menuImage, // Imeongezwa kuzuia error ya kutotuma picha
+                    sourceUrl: "https://github.com", // Unaweza kuweka link ya repo yako hapa
+                    renderLargerThumbnail: true 
                 }
             }
         }, { quoted: fakevCard });
 
     } catch (e) {
         console.error("Error in menu2 command:", e);
-        reply("❌ Error loading menu.");
+        reply("❌ Error loading menu. Angalia log za terminal yako.");
     }
 });
