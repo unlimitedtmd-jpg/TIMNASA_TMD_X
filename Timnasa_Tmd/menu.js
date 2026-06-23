@@ -2,13 +2,13 @@ const settings = require('../settings');
 const fs = require('fs');
 const path = require('path');
 
-// Global cache ya commands ili isisome faili upya kila wakati mtu anapo-command
+// Kumbukumbu ya kudumu kwenye RAM (Cache)
 let cachedHelpMessage = '';
 let isCacheLoaded = false;
 
-// Kazi hii inarun mara moja tu bot ikiwaka kuandaa orodha ya commands
+// Function inayosoma commands MARA MOJA TU wakati bot inawaka
 function preLoadCommands() {
-    const commandsDir = path.join(__dirname, '../commands'); // Hakikisha jina la folder ni sahihi
+    const commandsDir = path.join(__dirname, '../commands'); 
     const categories = {};
     let totalCommands = 0;
     const prefix = settings.prefix || '.';
@@ -30,10 +30,10 @@ function preLoadCommands() {
             }
         }
     } catch (err) {
-        console.error("Error pre-loading commands:", err);
+        console.error("Error loading commands into memory:", err);
     }
 
-    // Kutengeneza mwili wa ujumbe (Layout ya commands tu)
+    // Kutengeneza muundo wa ndani wa menu mapema kabisa
     let bodyText = `📊 *Total Loaded Commands:* ${totalCommands}\n` +
                    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
                    `_“Breaching limitations, automating the future.”_\n`;
@@ -54,16 +54,13 @@ function preLoadCommands() {
     isCacheLoaded = true;
 }
 
+// Hii ndio amri yenyewe ya sekunde 0
 async function helpCommand(sock, chatId, message) {
-    // Kama cache haijawa tayari, itapakia haraka hapa
-    if (!isCacheLoaded) {
-        preLoadCommands();
-    }
+    if (!isCacheLoaded) preLoadCommands();
 
-    const sender = message.key.participant || message.key.remoteJid;
     const pushName = message.pushName || "Cyber_User";
 
-    // Header inayotengenezwa papo hapo kwa sekunde 0 (bila kusubiri)
+    // Unakusanya ujumbe mzima papo hapo kutoka kwenye RAM
     let finalMenu = `⚡ ─── 『 *${settings.botName || 'TIMNASA_TMD-X'}* 』 ─── ⚡\n` +
                     `🌐 *[QUANTUM CORE V4.0.0]*\n` +
                     `👤 *Operator:* ${pushName}\n` +
@@ -71,42 +68,31 @@ async function helpCommand(sock, chatId, message) {
                     cachedHelpMessage + 
                     `\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n⚡ TIMNASA TIMOTH © 2026 ⚡`;
 
-    try {
-        // Tunachukua tu URL ya picha bila kuipakua kupitia axios (Hii inaokoa mda mwingi mno!)
-        let menuImageUrl = "https://files.catbox.moe/aapw1p.png"; // Picha yako ya default
-        try {
-            const pfp = await sock.profilePictureUrl(sender, 'image');
-            if (pfp) menuImageUrl = pfp;
-        } catch (e) {
-            // Kama mtumiaji hana picha, itatumia ile ya default bila kukwama wala kuchelewa
+    // WEKA LINK YA PICHA YAKO HAPA (Direct Link ambayo haichelewi)
+    const directImageUrl = "https://files.catbox.moe/aapw1p.png"; 
+
+    const newsletterConfig = {
+        forwardingScore: 999,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363406146813524@newsletter',
+            newsletterName: 'Timnasa_Tmd-X',
+            serverMessageId: 1
         }
+    };
 
-        const newsletterConfig = {
-            forwardingScore: 999,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363406146813524@newsletter',
-                newsletterName: 'Timnasa_Tmd-X',
-                serverMessageId: 1
-            }
-        };
-
-        // Inatuma picha kwa kutumia URL moja kwa moja - Hii ni INSTANT!
-        await sock.sendMessage(chatId, {
-            image: { url: menuImageUrl },
-            caption: finalMenu,
-            contextInfo: newsletterConfig
-        }, { quoted: message });
-
-    } catch (error) {
-        console.error('Error in instant list command:', error);
-        // Fallback ya haraka sana kama picha ikizingua
+    // Inarusha ujumbe WhatsApp ndani ya millisekunder chache tu!
+    await sock.sendMessage(chatId, {
+        image: { url: directImageUrl },
+        caption: finalMenu,
+        contextInfo: newsletterConfig
+    }, { quoted: message }).catch(async () => {
+        // Fallback ya haraka zaidi kama picha ikifeli, inatuma text tu ndani ya sekunde 0.1
         await sock.sendMessage(chatId, { text: finalMenu }, { quoted: message });
-    }
+    });
 }
 
-// Pakia commands mapema kabla hata mtu hajasema .list
+// Run pre-load mapema kabisa kabla hata mtu hajatype amri
 preLoadCommands();
 
 module.exports = helpCommand;
-
